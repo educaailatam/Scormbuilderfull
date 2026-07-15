@@ -1,0 +1,8 @@
+{
+  "name": "Remix: SCORM Quest Builder version full15.7",
+  "description": "Una herramienta de autoría intuitiva para crear lecciones interactivas y cuestionarios gamificados exportables a formato SCORM 1.2.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
