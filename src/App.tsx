@@ -13,7 +13,8 @@ import { PreviewModal } from './components/PreviewModal';
 import { AccessibilityPanel } from './components/AccessibilityPanel';
 import { AISettingsPanel } from './components/AISettingsPanel';
 import { NeonCustomizer } from './components/NeonCustomizer';
-import { Gatekeeper } from './components/Gatekeeper';
+import { LoginPage } from './components/LoginPage';
+import { AdminDashboard } from './components/AdminDashboard';
 import { CloudSync } from './components/CloudSync';
 import { QuizBundle, ThemeType, LessonItem, Question } from './types';
 import { Download, Package, BookOpen, Settings, Loader2, Eye, Sun, Moon, FileDown, Printer, AlertTriangle, CheckCircle2, XCircle, ShieldCheck, Accessibility, Keyboard, Save, RotateCcw, Upload, FileJson, FileText, Award, TrendingUp, Volume2, VolumeX, Bell, BellOff, RefreshCw, HelpCircle, Sparkles, Brain, LogOut, Wifi, WifiOff, Database } from 'lucide-react';
@@ -22,6 +23,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { generateManifest, generateQuizHtml } from './scormUtils';
 import { generateQuizPdf } from './pdfUtils';
 import { generateQuizDocx } from './docxUtils';
+import { auth } from './lib/firebase';
+import { signOut } from 'firebase/auth';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -38,13 +41,23 @@ export default function App() {
       return '';
     }
   });
+  const [isAdminUser, setIsAdminUser] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('scorm_builder_is_admin') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [showAdminDashboard, setShowAdminDashboard] = useState<boolean>(false);
 
-  const handleUnlock = (email: string) => {
+  const handleUnlock = (email: string, isAdmin: boolean) => {
     setIsAuthenticated(true);
     setAuthUserEmail(email);
+    setIsAdminUser(isAdmin);
     try {
       localStorage.setItem('scorm_builder_auth', 'true');
       localStorage.setItem('scorm_builder_auth_email', email);
+      localStorage.setItem('scorm_builder_is_admin', isAdmin ? 'true' : 'false');
     } catch (e) {
       console.error(e);
     }
@@ -53,9 +66,12 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setAuthUserEmail('');
+    setIsAdminUser(false);
     try {
       localStorage.removeItem('scorm_builder_auth');
       localStorage.removeItem('scorm_builder_auth_email');
+      localStorage.removeItem('scorm_builder_is_admin');
+      signOut(auth).catch(err => console.error("Error signing out from Firebase:", err));
     } catch (e) {
       console.error(e);
     }
@@ -950,7 +966,7 @@ export default function App() {
   };
 
   if (!isAuthenticated) {
-    return <Gatekeeper onUnlock={handleUnlock} isDarkMode={isDarkMode} />;
+    return <LoginPage onUnlock={handleUnlock} isDarkMode={isDarkMode} />;
   }
 
   return (
@@ -1114,6 +1130,22 @@ export default function App() {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
+
+            {isAuthenticated && isAdminUser && (
+              <button
+                onClick={() => { playSound('click'); setShowAdminDashboard(true); }}
+                className={`p-2 rounded-xl transition-all flex items-center gap-1.5 font-bold text-xs border ${
+                  isAccessibilityMode
+                    ? 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700'
+                    : 'bg-indigo-600 text-white border-transparent hover:bg-indigo-500 shadow-sm'
+                }`}
+                aria-label="Panel de Administración"
+                title="Panel de Administración de Solicitudes"
+              >
+                <ShieldCheck size={20} />
+                <span className="hidden sm:inline">Administrar Accesos</span>
+              </button>
+            )}
 
             {isAuthenticated && (
               <button
@@ -2430,6 +2462,17 @@ export default function App() {
         onClose={() => setIsPreviewOpen(false)} 
         bundle={{ title, theme, items: items.filter(it => !it.data.isDraft), timeLimit, shuffleQuestions, kioskMode, feedbackTiming, neonPrimaryColor, neonAccentColor }}
       />
+
+      <AnimatePresence>
+        {showAdminDashboard && (
+          <AdminDashboard 
+            isOpen={showAdminDashboard}
+            onClose={() => setShowAdminDashboard(false)}
+            isDarkMode={isDarkMode}
+            playSound={playSound}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {toast && toast.show && (

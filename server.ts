@@ -9,6 +9,7 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import Groq from 'groq-sdk';
 import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -603,6 +604,124 @@ const PORT = 3000;
     } catch (error: any) {
       console.error('Error in /api/tutor-review:', error);
       res.status(500).json({ error: error.message || 'Error al ejecutar el tutor de IA.' });
+    }
+  });
+
+  // Endpoint to send approval emails when a request is approved by an administrator
+  app.post('/api/send-approval-email', async (req, res) => {
+    try {
+      const { email, firstName, lastName, userId } = req.body;
+      if (!email || !firstName || !lastName || !userId) {
+        return res.status(400).json({ error: 'Faltan parámetros requeridos para enviar el correo.' });
+      }
+
+      console.log(`[SMTP Mailer] Iniciando envío de correo de aprobación para: ${email} (ID: ${userId})`);
+
+      const smtpHost = process.env.SMTP_HOST;
+      const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+      const smtpSecure = process.env.SMTP_SECURE === 'true';
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPass = process.env.SMTP_PASS;
+      const smtpFrom = process.env.SMTP_FROM || '"SCORM AI Builder Pro" <no-reply@scormbuilder.com>';
+
+      const isSmtpConfigured = !!(smtpHost && smtpUser && smtpPass);
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
+            .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 30px 20px; text-align: center; color: #ffffff; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em; }
+            .content { padding: 40px 30px; line-height: 1.6; }
+            .greeting { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #0f172a; }
+            .message { font-size: 14px; color: #475569; margin-bottom: 24px; }
+            .badge-container { background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px; }
+            .badge-title { font-size: 11px; text-transform: uppercase; font-weight: 800; color: #64748b; letter-spacing: 0.1em; margin-bottom: 6px; }
+            .badge-value { font-family: monospace; font-size: 20px; font-weight: 800; color: #4f46e5; letter-spacing: 0.05em; }
+            .btn { display: inline-block; padding: 12px 24px; background-color: #4f46e5; color: #ffffff !important; font-weight: 700; text-decoration: none; border-radius: 8px; font-size: 14px; transition: background-color 0.2s; text-align: center; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; background-color: #f8fafc; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>¡Solicitud de Acceso Aprobada!</h1>
+            </div>
+            <div class="content">
+              <div class="greeting">Hola ${firstName} ${lastName},</div>
+              <p class="message">
+                Nos complace informarte que tu solicitud de acceso para la herramienta de autoría de cuestionarios SCORM AI Builder Pro ha sido revisada y aprobada por un administrador.
+              </p>
+              
+              <div class="badge-container">
+                <div class="badge-title">Tu ID de Acceso Exclusivo</div>
+                <div class="badge-value">${userId}</div>
+              </div>
+              
+              <p class="message">
+                Ahora puedes ingresar a la plataforma y desbloquear todas las funciones premium para diseñar cursos SCORM, exportar en formato PDF o GIFT, y personalizar tus cuestionarios con Inteligencia Artificial.
+              </p>
+              
+              <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
+                <a href="${process.env.APP_URL || 'https://ai.studio/build'}" class="btn">Comenzar a Crear Cuestionarios</a>
+              </div>
+            </div>
+            <div class="footer">
+              Este es un correo automático. Por favor no respondas a este mensaje.<br>
+              &copy; 2026 SCORM AI Builder Pro &middot; Todos los derechos reservados.
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      let mailResult = null;
+
+      if (isSmtpConfigured) {
+        const transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpSecure,
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+
+        mailResult = await transporter.sendMail({
+          from: smtpFrom,
+          to: email,
+          subject: '¡Tu acceso a SCORM AI Builder Pro ha sido aprobado! 🎉',
+          html: htmlContent,
+        });
+
+        console.log(`[SMTP Mailer] Correo enviado de forma exitosa usando SMTP:`, mailResult.messageId);
+      } else {
+        console.log(`[SMTP Mailer] [SIMULACIÓN] No se detectó configuración SMTP completa en .env (SMTP_HOST, SMTP_USER, SMTP_PASS).`);
+        console.log(`--- INICIO DE CORREO SIMULADO ---`);
+        console.log(`De: ${smtpFrom}`);
+        console.log(`Para: ${email}`);
+        console.log(`Asunto: ¡Tu acceso a SCORM AI Builder Pro ha sido aprobado! 🎉`);
+        console.log(`Contenido (HTML parcial):\nHola ${firstName}, tu ID de acceso exclusivo es: ${userId}`);
+        console.log(`--- FIN DE CORREO SIMULADO ---`);
+      }
+
+      res.json({
+        success: true,
+        sent: isSmtpConfigured,
+        simulated: !isSmtpConfigured,
+        userId: userId,
+        message: isSmtpConfigured 
+          ? 'El correo de aprobación ha sido enviado exitosamente mediante SMTP.' 
+          : 'La simulación de correo de aprobación se ejecutó de forma correcta (consola del servidor).'
+      });
+    } catch (error: any) {
+      console.error('Error al enviar correo de aprobación:', error);
+      res.status(500).json({ error: error.message || 'Error interno al procesar el correo de aprobación.' });
     }
   });
 

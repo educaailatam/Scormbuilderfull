@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "AccessRequest": {
+      "title": "AccessRequest",
+      "description": "A request by a third-party user to be granted access to the SCORM AI Builder Pro tool",
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Requester's first name"
+        },
+        "lastName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Requester's last name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 100,
+          "description": "Requester's email address"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Unique user ID generated for the applicant"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "Approval status of the request"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the request was submitted"
+        }
+      },
+      "required": ["firstName", "lastName", "email", "userId", "status", "createdAt"]
+    },
+    "UserSave": {
+      "title": "UserSave",
+      "description": "Pedagogical data and custom quizzes saved by the authenticated user in the cloud",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the quiz/lesson"
+        },
+        "theme": {
+          "type": "string",
+          "description": "Active UI theme name"
+        },
+        "items": {
+          "type": "array",
+          "description": "List of lesson elements and questions"
+        },
+        "syncedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date when it was last updated in the cloud"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the owner"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "Email of the owner"
+        }
+      },
+      "required": ["userId", "syncedAt"]
+    }
+  },
+  "firestore": {
+    "/solicitudes_acceso/{requestId}": {
+      "schema": "AccessRequest",
+      "description": "Publicly submittable form data from prospective third-party users"
+    },
+    "/user_saves/{userId}": {
+      "schema": "UserSave",
+      "description": "Protected user documents storing custom lesson saves, accessible only by owner"
+    }
+  }
+}

@@ -1,6 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // 1. Default Catch-All Deny Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Path Variable/ID and Primitive Validators
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidAccessRequest(data) {
+      return data.keys().hasAll(['firstName', 'lastName', 'email', 'userId', 'status', 'createdAt'])
+        && data.keys().size() == 6
+        && data.firstName is string && data.firstName.size() >= 1 && data.firstName.size() <= 100
+        && data.lastName is string && data.lastName.size() >= 1 && data.lastName.size() <= 100
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 100
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 100
+        && data.status == 'pending'
+        && data.createdAt == request.time;
+    }
+
+    // 3. Public Access Requests Collection
+    match /solicitudes_acceso/{requestId} {
+      allow create: if isValidId(requestId) && isValidAccessRequest(request.resource.data);
+      allow read, update: if true;
+      allow delete: if false;
+    }
+
+    // 4. User Saves Collection (Read/Write Protected by UID)
     match /user_saves/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

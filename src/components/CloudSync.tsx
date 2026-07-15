@@ -287,11 +287,7 @@ export const CloudSync: React.FC<Props> = ({
     }
   };
 
-  const fillQuickDemo = () => {
-    setEmail('marianofischer@gmail.com');
-    setPassword('SCORM-PRO-2026');
-    setAuthError(null);
-  };
+
 
   if (loading) {
     return (
@@ -546,17 +542,7 @@ export const CloudSync: React.FC<Props> = ({
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={fillQuickDemo}
-                  className={`w-full py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
-                    isDarkMode
-                      ? 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800/80 hover:text-white'
-                      : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Autocompletar credenciales de demostración ✨
-                </button>
+
               </div>
             </form>
           </motion.div>
