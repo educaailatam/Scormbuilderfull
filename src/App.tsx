@@ -2528,8 +2528,17 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <footer className={`max-w-5xl mx-auto px-4 py-8 border-t text-center text-sm transition-colors duration-300 ${isDarkMode ? 'border-slate-800 text-slate-600' : 'border-slate-200 text-slate-400'}`}>
-        SCORM Builder &copy; {new Date().getFullYear()} - Herramienta de autoría rápida
+      <footer className={`max-w-5xl mx-auto px-4 py-8 border-t text-center text-sm transition-colors duration-300 flex flex-col sm:flex-row items-center justify-center gap-2 ${isDarkMode ? 'border-slate-800 text-slate-600' : 'border-slate-200 text-slate-400'}`}>
+        <span>SCORM Builder &copy; {new Date().getFullYear()} - Herramienta de autoría rápida</span>
+        <span className="hidden sm:inline">&middot;</span>
+        <a 
+          href="https://simple.bio/ARIfischer" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+        >
+          Contacto: https://simple.bio/ARIfischer
+        </a>
       </footer>
     </div>
   );
