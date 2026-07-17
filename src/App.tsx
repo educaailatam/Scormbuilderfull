@@ -2010,6 +2010,7 @@ export default function App() {
           </div>
 
           <AIAssistant 
+            items={items}
             systemPrompt={aiSystemPrompt}
             onAddQuestions={(newItems) => {
               setItems([...items, ...newItems]);
